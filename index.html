@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iGadget AI - Chatbot Store</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #eee; }
+        .chat-bubble { max-width: 85%; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-[#F9FAFB] h-screen flex flex-col">
+
+    <nav class="glass-header sticky top-0 z-20 p-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-tr from-gray-900 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
+                <i class="fab fa-apple text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-sm font-bold text-gray-900">iGadget ChatStore</h1>
+                <p class="text-[10px] text-green-500 font-medium">● AI Assistant Online</p>
+            </div>
+        </div>
+        <button onclick="location.reload()" class="text-gray-400 hover:text-black transition">
+            <i class="fas fa-redo-alt"></i>
+        </button>
+    </nav>
+
+    <main id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
+        <div class="chat-bubble flex gap-3">
+            <div class="w-8 h-8 bg-black rounded-full flex-shrink-0 flex items-center justify-center text-[10px] text-white">AI</div>
+            <div class="space-y-2">
+                <div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100">
+                    <p class="text-sm text-gray-800">Selamat datang di <b>iGadget Store</b>! 🍎</p>
+                    <p class="text-sm text-gray-600 mt-1">Saya bisa bantu cari iPhone baru/bekas, cek promo, dan bantu order sampai kirim ke rumah.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="handleQuickReply('Lihat Katalog')" class="text-xs bg-blue-50 text-blue-600 px-3 py-2 rounded-full border border-blue-100 font-medium transition hover:bg-blue-600 hover:text-white">📱 Lihat Katalog</button>
+                    <button onclick="handleQuickReply('Cek Promo')" class="text-xs bg-red-50 text-red-600 px-3 py-2 rounded-full border border-red-100 font-medium transition hover:bg-red-600 hover:text-white">🔥 Promo Hari Ini</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="fixed bottom-0 w-full p-4 bg-gradient-to-t from-white via-white to-transparent">
+        <div class="max-w-3xl mx-auto relative flex items-center">
+            <input type="text" id="user-input" placeholder="Ketik pesan..." 
+                class="w-full bg-white border border-gray-200 shadow-xl rounded-2xl py-4 pl-5 pr-14 outline-none focus:border-black transition">
+            <button onclick="sendMessage()" class="absolute right-2 bg-black text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-105 transition">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+          const _0x5f21 = [65, 73, 122, 97, 83, 121, 67, 99, 65, 54, 45, 89, 105, 73, 106, 85, 56, 50, 66, 70, 106, 72, 69, 86, 101, 95, 51, 95, 86, 66, 49, 120, 90, 87, 120, 105, 79, 57, 48, 65, 73, 122, 97, 83, 121, 67, 99, 65, 54, 45, 89, 105, 73, 106, 85, 56, 50, 66, 70, 106, 72, 69, 86, 101, 95, 51, 95, 86, 66, 49, 120, 90, 87, 120, 105, 79, 57, 48];
+
+const API_KEY = String.fromCharCode(..._0x5f21); 
+
+        const db = {
+            products: [
+                { id: 1, name: "iPhone 15 Pro", price: 18500000, promo: 17999000, img: "https://images.unsplash.com/photo-1696446701796-da61225697cc?w=400", status: "Baru", garansi: "iBox" },
+                { id: 2, name: "iPhone 13", price: 9500000, promo: 8900000, img: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400", status: "Bekas", garansi: "Ex-Inter" },
+                { id: 3, name: "iPhone 11", price: 4800000, promo: null, img: "https://images.unsplash.com/photo-1574755393849-623942496936?w=400", status: "Bekas", garansi: "Personal" }
+            ],
+            shipping: ["JNE", "J&T", "Sicepat", "GoSend"]
+        };
+
+        let checkoutData = { item: "", price: "", name: "", address: "", courier: "" };
+        let currentStep = "chat"; 
+        const chatBox = document.getElementById('chat-box');
+
+        function appendMessage(role, content) {
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'flex justify-end' : 'flex gap-3 chat-bubble';
+            if(role === 'user') {
+                div.innerHTML = `<div class="bg-black text-white p-3 px-5 rounded-2xl rounded-tr-none shadow-lg text-sm">${content}</div>`;
+            } else {
+                div.innerHTML = `
+                    <div class="w-8 h-8 bg-black rounded-full flex-shrink-0 flex items-center justify-center text-[10px] text-white">AI</div>
+                    <div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 text-sm text-gray-800 w-full">${content}</div>`;
+            }
+            chatBox.appendChild(div);
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        }
+
+        function handleQuickReply(text) {
+            document.getElementById('user-input').value = text;
+            sendMessage();
+        }
+
+        function showCatalog(filterPromo = false) {
+            let items = filterPromo ? db.products.filter(p => p.promo) : db.products;
+            let html = `<p class='font-bold mb-3'>${filterPromo ? '🔥 Promo Spesial' : 'Daftar iPhone Tersedia'}:</p><div class='grid gap-4'>`;
+            items.forEach(p => {
+                html += `
+                    <div class="bg-gray-50 border rounded-xl overflow-hidden shadow-sm">
+                        <img src="${p.img}" class="w-full h-32 object-cover">
+                        <div class="p-3">
+                            <p class="font-bold text-gray-900">${p.name}</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-widest">${p.status} - Garansi ${p.garansi}</p>
+                            <div class="mt-2">
+                                ${p.promo ? `<span class="text-xs line-through text-gray-400 font-normal">Rp ${p.price.toLocaleString()}</span><br>` : ''}
+                                <span class="text-blue-600 font-bold">Rp ${(p.promo || p.price).toLocaleString()}</span>
+                            </div>
+                            <button onclick="startOrder('${p.name}', '${(p.promo || p.price).toLocaleString()}')" 
+                                class="w-full mt-3 bg-black text-white py-2 rounded-lg text-xs font-bold transition active:scale-95">
+                                Pesan Sekarang
+                            </button>
+                        </div>
+                    </div>`;
+            });
+            html += `</div>`;
+            appendMessage('bot', html);
+        }
+
+        function startOrder(name, price) {
+            checkoutData.item = name;
+            checkoutData.price = price;
+            currentStep = "ask_name";
+            appendMessage('bot', `Pilihan yang bagus! Anda memesan <b>${name}</b>.<br><br>Mohon isi <b>Nama Lengkap</b> Anda?`);
+        }
+
+        function finishCheckout() {
+            const waNumber = "6282121218466";
+            const text = `*ORDER BARU - iGadget ChatStore*\n------------------\n📦 *Produk:* ${checkoutData.item}\n💰 *Harga:* Rp ${checkoutData.price}\n👤 *Nama:* ${checkoutData.name}\n📍 *Alamat:* ${checkoutData.address}\n🚚 *Kurir:* ${checkoutData.courier}\n------------------`;
+            appendMessage('bot', "Klik tombol di bawah untuk kirim pesanan ke WhatsApp.");
+            const btn = document.createElement('div');
+            btn.innerHTML = `<button onclick="window.open('https://wa.me/${waNumber}?text=${encodeURIComponent(text)}')" class="w-full bg-green-500 text-white p-4 rounded-2xl font-bold mt-2 shadow-lg flex items-center justify-center gap-2"><i class="fab fa-whatsapp text-xl"></i> KIRIM KE WHATSAPP</button>`;
+            chatBox.appendChild(btn);
+            currentStep = "chat";
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const val = input.value.trim();
+            if(!val) return;
+
+            appendMessage('user', val);
+            input.value = "";
+
+            if(currentStep === "ask_name") {
+                checkoutData.name = val;
+                currentStep = "ask_address";
+                setTimeout(() => appendMessage('bot', `Halo Kak ${val}! Sekarang kirimkan <b>Alamat Lengkap</b> ya.`), 500);
+                return;
+            } else if(currentStep === "ask_address") {
+                checkoutData.address = val;
+                currentStep = "ask_courier";
+                let btns = db.shipping.map(s => `<button onclick="handleQuickReply('${s}')" class="bg-gray-100 px-3 py-2 rounded-lg text-xs hover:bg-black hover:text-white transition">${s}</button>`).join('');
+                setTimeout(() => appendMessage('bot', `Pilih kurir:<br><div class="flex flex-wrap gap-2 mt-3">${btns}</div>`), 500);
+                return;
+            } else if(currentStep === "ask_courier") {
+                checkoutData.courier = val;
+                finishCheckout();
+                return;
+            }
+
+            if(val.toLowerCase().includes('katalog')) { showCatalog(); return; }
+            if(val.toLowerCase().includes('promo')) { showCatalog(true); return; }
+
+            // AI Logic
+            const tempId = "ai-" + Date.now();
+            appendMessage('bot', `<div id="${tempId}"><i class="fas fa-spinner animate-spin"></i> Berpikir...</div>`);
+
+try {
+                // Versi API v1beta dengan model flash adalah kombinasi paling umum
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        contents: [{ 
+                            parts: [{ text: `Kamu adalah Gunkasep, asisten iGadget Store yang ramah. Jawab sangat singkat: ${val}` }] 
+                        }] 
+                    })
+                });
+                
+                const data = await res.json();
+
+                // Jika masih error 'Not Found', kita paksa ganti model di dalam kode
+                if (data.error) {
+                    console.error("Penyebab Error:", data.error.message);
+                    
+                    // Coba cadangan otomatis ke model 'gemini-pro' jika flash gagal
+                    const resBackup = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: `Jawab singkat: ${val}` }] }] })
+                    });
+                    const dataBackup = await resBackup.json();
+                    
+                    if(dataBackup.candidates) {
+                        const aiText = dataBackup.candidates[0].content.parts[0].text;
+                        document.getElementById(tempId).parentElement.innerHTML = aiText.replace(/\n/g, '<br>');
+                        return;
+                    }
+                }
+
+                if (data.candidates && data.candidates[0].content) {
+                    const aiText = data.candidates[0].content.parts[0].text;
+                    const cleanText = aiText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+                    document.getElementById(tempId).parentElement.innerHTML = cleanText;
+                } else {
+                    document.getElementById(tempId).innerHTML = "Lagi mikir keras nih Kak, tanya yang lain ya atau ketik 'Katalog'.";
+                }
+            } catch (e) {
+                document.getElementById(tempId).innerHTML = "Koneksi ke otak AI terputus. Pastikan internet lancar ya Kak!";
+            }
+           }
+</script>
+</body>
+</html>
